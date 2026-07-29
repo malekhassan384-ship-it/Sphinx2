@@ -1,0 +1,111 @@
+cmake_minimum_required(VERSION 3.16)
+project(Sphinx VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
+if(WIN32)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
+option(BUILD_TESTS "Build unit tests" OFF)
+option(INSTALL_DEPS "Automatically download dependencies" ON)
+
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui)
+
+set(SOURCES
+    src/main.cpp
+    src/VaultEngine.cpp
+    src/MainWindow.cpp
+)
+
+set(HEADERS
+    include/VaultEngine.h
+    include/MainWindow.h
+)
+
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    Qt6::Core
+    Qt6::Widgets
+    Qt6::Gui
+)
+
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(WIN32)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WIN32_EXECUTABLE TRUE
+        OUTPUT_NAME "Sphinx"
+        PREFIX ""
+    )
+    
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        UNICODE
+        _UNICODE
+        NOMINMAX
+        WIN32_LEAN_AND_MEAN
+    )
+    
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_options(${PROJECT_NAME} PRIVATE /O2 /GL)
+        target_link_options(${PROJECT_NAME} PRIVATE /LTCG /OPT:REF)
+    endif()
+elseif(APPLE)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.sphinxsecurity.vault"
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+        MACOSX_BUNDLE_COPYRIGHT "Copyright © 2024 Sphinx Security"
+    )
+else()
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        INSTALL_RPATH "$ORIGIN/lib"
+        BUILD_WITH_INSTALL_RPATH FALSE
+    )
+endif()
+
+install(TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION bin
+    BUNDLE DESTINATION .
+    LIBRARY DESTINATION lib
+)
+
+if(UNIX AND NOT APPLE)
+    install(FILES resources/sphinx.desktop DESTINATION share/applications)
+    install(DIRECTORY resources/icons/ DESTINATION share/icons/hicolor/scalable/apps/)
+endif()
+
+file(GLOB_RECURSE ALL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
+add_custom_target(format
+    COMMAND clang-format -i ${ALL_SOURCES}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Formatting source files with clang-format"
+)
+
+message(STATUS "")
+message(STATUS "Sphinx - Secure Digital Vault v${PROJECT_VERSION}")
+message(STATUS "===========================================")
+message(STATUS "  Build Type:     ${CMAKE_BUILD_TYPE}")
+message(Status "  C++ Standard:   C++${CMAKE_CXX_STANDARD}")
+message(STATUS "  Qt Version:     ${Qt6_VERSION}")
+message(STATUS "  Install Prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "===========================================")
+message(STATUS "")
+
+feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)

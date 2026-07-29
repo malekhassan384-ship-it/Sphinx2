@@ -1,0 +1,29 @@
+#include <QApplication>
+#include <QStyleFactory>
+#include <QFont>
+#include <QIcon>
+#include "MainWindow.h"
+
+int main(int argc, char *argv[])
+{
+    QApplication app(argc, argv);
+    
+    app.setApplicationName("Sphinx");
+    app.setApplicationVersion("1.0.0");
+    app.setOrganizationName("SphinxSecurity");
+    app.setOrganizationDomain("sphinxsecurity.com");
+    
+    app.setStyle(QStyleFactory::create("Fusion"));
+    
+    QFont appFont = app.font();
+    appFont.setFamily("Segoe UI");
+    appFont.setPointSize(9);
+    app.setFont(appFont);
+    
+    app.setWindowIcon(QIcon(":/icons/app_icon.png"));
+    
+    MainWindow mainWindow;
+    mainWindow.show();
+    
+    return app.exec();
+}
